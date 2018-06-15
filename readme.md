@@ -8,7 +8,7 @@ To install, simply download the repository from this github page. The library is
 
 * [Nanonispy](https://github.com/underchemist/nanonispy)
 * [Numpy](www.numpy.org) for manipulation of data
-* [Matplotlib] for plotting
+* [Matplotlib](https://matplotlib.org) for plotting
 * [Pint](https://pint.readthedocs.io/en/latest/) for unit conversion
 
 In the future, I will put the package PyPI so that you can download using `pip install STMAnalysis`.
