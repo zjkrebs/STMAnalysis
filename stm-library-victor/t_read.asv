@@ -1,0 +1,30 @@
+% function [x,y,z]=t_read(fn)
+% This function reads a topography scala file (fn) and retrieve the x,y vectors
+% and the z matrix.
+% if rs=1 then z is leveled (a linear slope is removed).
+function [x,y,z]=t_read(fn,iz,rs)
+[a,b]=strread(fn,'%[^.].%s');
+a=char(a);
+[xs,ys,isx,isy,p_min,p_max,r_min,r_max]=get_scan_par(a,iz);
+dx=xs/(isx-1);
+dy=ys/(isy-1);
+x=0:dx:xs;
+y=0:dy:ys;
+fid1=fopen(fn);
+m=fread(fid1,'int8');
+n=isx*isy*2;
+t=m(1:2:n);
+m(1:2:n)=m(2:2:n);
+m(2:2:n)=t;
+fid2=fopen('q.dat','w');
+fwrite(fid2,m,'int8');
+fclose('all');
+fid=fopen('q.dat');
+z=fread(fid,'int16');
+fclose('all');
+delete('q.dat');
+z=reshape(z,isx,isy);
+z=p_min+(z-r_min)*(p_max-p_min)/(r_max-r_min);
+if rs==1,
+    z=remove_slope(z);
+end

@@ -1,0 +1,12 @@
+% draw_lattice(sl1,deb1,sl2,deb2,sl3,deb3,x0,y0,nl)
+
+function draw_lattice(sl1,deb1,sl2,deb2,sl3,deb3,x0,y0,nl)
+if x0==0 & y0==0,
+    [x0 y0]=ginput(1);
+end
+b1=y0-sl1*x0;
+b2=y0-sl2*x0;
+b3=y0-sl3*x0;
+[xa xb]=get(gca,'xlim'
+for i=1:nl,
+    

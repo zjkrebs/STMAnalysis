@@ -1,0 +1,58 @@
+% draw_lattice2(x0,y0,nl,drx1,dry1,drx2,dry2,ss,dline)
+% x0,y0 position of center point of lattice. if x0=0 and y0=0 then mouse
+% click is used to select a point.
+% nl is the number of lattice line to draw
+% drx1 and dry1 = drift in x and y in units of nm/sec in the image scan
+% drx2 and dry2 = drift in x and y in units of nm/sec in the atomic lattice scan 
+% ss = scan speed
+% dline = difference between lines in nm
+
+function draw_lattice2(x0,y0,nl,drx1,dry1,drx2,dry2,ss,dline)
+%function draw_lattice(sl1,deb1,sl2,deb2,sl3,deb3,x0,y0,nl)
+load 'd:\data\sample\pt(111)\10-22-04\107\lines.mat'
+%load 'u:\sample\pt(111)\10-22-04\107\lines.mat'
+if x0==0 & y0==0,
+    [x0 y0]=ginput(1);
+end
+
+drx=drx1-drx2;
+dry=dry1-dry2;
+
+ttt=get(gca,'xlim');
+xa=ttt(1);
+xb=ttt(2);
+dx=(xb-xa)/100;
+dy1=dx*sl1;
+dy2=dx*sl2;
+dy3=dx*sl3;
+x=xa:dx:xb;
+
+dtx=dx/ss;
+dty1=((xb-xa)/ss*2)*dx*sl1/dline+dy1/ss;
+dty2=((xb-xa)/ss*2)*dx*sl2/dline+dy2/ss;
+dty3=((xb-xa)/ss*2)*dx*sl3/dline+dy3/ss;
+
+sl1=(dy1+dty1*dry)/(dx+dtx*drx);
+sl2=(dy2+dty2*dry)/(dx+dtx*drx);
+sl3=(dy3+dty3*dry)/(dx+dtx*drx);
+deb1=deb1+dty1*dry;
+deb2=deb2+dty2*dry;
+deb3=deb3+dty3*dry;
+
+b1=y0-sl1*x0;
+b2=y0-sl2*x0;
+b3=y0-sl3*x0;
+
+hold on
+for i=0:nl,
+    y1=x*sl1+b1+deb1*i;
+    y2=x*sl1+b1-deb1*i;
+    plot(x,y1,x,y2,'b')
+    y1=x*sl2+b2+deb2*i;
+    y2=x*sl2+b2-deb2*i;
+    plot(x,y1,x,y2,'b')
+    y1=x*sl3+b3+deb3*i;
+    y2=x*sl3+b3-deb3*i;
+    plot(x,y1,x,y2,'b')
+end
+hold off

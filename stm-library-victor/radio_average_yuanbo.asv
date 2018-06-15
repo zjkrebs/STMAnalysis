@@ -1,0 +1,43 @@
+% do the radio average for a 2D matrix
+% The origin is set at the center
+
+function res = radio_average_yuanbo(input)
+
+[nx, ny] = size(input);
+
+% Setup the x axis
+kn = 200;
+kx_Max = max(kx); ky_Max = max(ky);
+k_Max = sqrt(kx_Max^2 + ky_Max^2)/(2*np+1);
+k_Step = k_Max/kn;
+FT_P = zeros(kn,3);
+for j=1:kn,
+    FT_P(j,1) = k_Step*(j-0.5);
+end
+
+% Find total values of FT for each of the k
+% kind of like making a histogram s
+center_kx = (kx(nftx) + kx(1))/2;
+center_ky = (ky(nfty) + ky(1))/2;
+for i=1:nftx,
+    for j=1:nfty,
+        k = sqrt((kx(i)-center_kx)^2 + (ky(j)-center_ky)^2);
+        ind = int32(k/k_Step);
+        if ind <= kn
+            if ind == 0
+                FT_P(1,2) = FT_P(1,2) + fft_zs(i,j);
+                FT_P(1,3) = FT_P(1,3) + 1;
+            else
+                FT_P(ind,2) = FT_P(ind,2) + fft_zs(i,j);
+                FT_P(ind,3) = FT_P(ind,3) + 1;
+            end
+        end
+    end
+end
+
+% Take the average of each 'bin' to get FT value
+for j=1:kn,
+    if FT_P(j,3) > 0
+        FT_P(j,2) = FT_P(j,2)/FT_P(j,3);
+    end
+end

@@ -1,0 +1,22 @@
+Matlab programs for analyzing data.
+
+I would really like to be able to look at the spectra
+that we take and do image processing in Matlab.
+
+I've attached my STM library from PhD to this e-mail.
+It may be helpful, but it also may not since the data
+was in a different format.
+
+The basic thing we need is a program that plots an
+image and marks the points where the spectra were taken,
+and then also plots the spectra.
+
+Stuff we need to do:
+
+- second derivative
+- average several spectra together
+- plot over different voltage ranges
+- scale the spectra
+- change colors
+
+https://github.com/underchemist/nanonispy/blob/master/nanonispy/read.py

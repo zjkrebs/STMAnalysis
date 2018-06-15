@@ -1,0 +1,22 @@
+% m2 = drift_corr(m1,xd,yd,ss);
+% m1 = original matrix
+% xd = x (scanning direction, second index) drift in nm/sec
+% yd = y (first index) drift in nm/sec
+% ss = scan speed in nm/sec
+% x = x vector
+% y = y vector
+% m2 corrected matrix
+
+function m2=drift_corr(m1,xd,yd,ss,x,y);
+
+[ny nx]=size(m1);
+m2=zeros(ny,nx);
+tx=(x-x(1))/ss;
+xc=tx*xd;
+ty=reshape((y-y(1))/ss,ny,1)+tx(nx)*2*reshape(0:ny-1,ny,1);
+yc=ty*yd;
+yc=yc*ones(1,ny);
+xc=ones(nx,1)*xc;
+xc=xc'
+[ycc,xcc]=meshgrid(yc,xc);
+m2=griddata(ycc,xcc,m1,y,x);
