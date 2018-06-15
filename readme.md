@@ -12,3 +12,16 @@ To install, simply download the repository from this github page. The library is
 * [Pint](https://pint.readthedocs.io/en/latest/) for unit conversion
 
 In the future, I will put the package PyPI so that you can download using `pip install STMAnalysis`.
+
+## Tutorial
+
+STM experiments mainly consist of 2D scans of a surface or electronic spectra. Ther objects in the `STMAnalysis` library that describe these measurements are `Scan` and `Spectrum` respectively. By creating a variable that is one of these object, and providing the required file path, the data is automatically read in to the objects. You can then view the data. For example
+
+```python
+sc = Scan('test_files/06-08-2018_blg001.sxm')
+sc.view()
+```
+
+will plot the following scan data.
+
+[ExampleScan]: images/example_scan.png "Dirty Gold"
