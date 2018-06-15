@@ -3,7 +3,7 @@ from . import * # import everything from __init__.py
 class Scan:
 	"""
 	Class of 2D Scan data. Automatically converts all data to
-	unitful data using the ureg 'UnitRegistry' object from the pint' package.
+	unitful data using the ureg 'UnitRegistry' object from the 'pint' package.
 
 	Parameters
 	----------
@@ -38,9 +38,8 @@ class Scan:
 
 		self.range = self.scan.header['scan_range'] * ureg.meter
 
-		# Fill nan values with neighboring?
 
-	def view(self,signal = 'Z', direction='average',zscale='nano'):
+	def view(self,signal = 'Z', direction='average',zscale='nano',space='real'):
 		"""
 		Uses matplotlib.pyplot.imshow to plot self.signals.
 
@@ -54,6 +53,10 @@ class Scan:
 
 		zscale:		Scales units for plotting 3rd axis of data.
 					Defaults to 'nano'.
+
+		space:		Whether to plot in real or reciprocal space.
+					Reciprocal space is found with a FFT.
+					Defaults to 'real'.
 		"""
 
 		if direction == 'average':
@@ -74,23 +77,30 @@ class Scan:
 		z_unit = ureg.parse_expression( zscale + str(image.units) ).units
 		image = image.to(z_unit)
 
+		if space == 'reciprocal':
+			image = np.fft.fft2(image.magnitude).real * image.units
+			extent = 1 / extent
+			print(extent.units)
+			plot_title += ' (FFT)'
+
 		# Create the figure
 		fig, ax = plt.subplots()
 
 		fig.canvas.set_window_title('From file:  '+ self.fname)
 
 		im_ax = ax.imshow(	image,
-							extent = [0, extent[0].magnitude,
-									0, extent[1].magnitude]) 
+							extent = [-extent[0].magnitude/2, extent[0].magnitude/2,
+									-extent[1].magnitude/2, extent[1].magnitude/2]) 
 
 		ax.set_xlabel('x ({:~})'.format(extent.units))
 		ax.set_ylabel('y ({:~})'.format(extent.units))
 
 		# Color Bar
 		cbar = fig.colorbar(im_ax)
-		cbar.set_label('{} ({:~})'.format(signal,z_unit))
+		cbar.set_label('{} ({:~})'.format(signal,image.units))
 		ax.set_title(plot_title)
 		plt.show()
+
 
 class Spectrum:
 	"""
