@@ -1,3 +1,5 @@
+name = "STMAnalysis"    # For PyPI
+
 import nanonispy as nap # For uploading data from Nanonis Software
 import numpy as np 		# For manipulating data
 import matplotlib.pyplot as plt # For plotting data
