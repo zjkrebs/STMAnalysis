@@ -35,10 +35,16 @@ class Scan:
 			self.signals[key]['backward'] = self.signals[key]['backward'][:,::-1]
 			self.signals[key]['forward'] = self.signals[key]['forward'] * unit[i]
 			self.signals[key]['backward'] = self.signals[key]['backward'] * unit[i]
+			self.signals[key]['average'] = ( self.signals[key]['forward'] + self.signals[key]['backward'] ) / 2
 
 		self.range = self.scan.header['scan_range'] * ureg.meter
 
 
+	def get_signal(signal='Z',direction='average'):
+		"""
+		Returns the chosen signal from self.signals in the chosen direction.
+
+		"""
 	def view(self,signal = 'Z', direction='average',zscale='nano',space='real'):
 		"""
 		Uses matplotlib.pyplot.imshow to plot self.signals.
@@ -67,20 +73,17 @@ class Scan:
 			plot_title = '{} {} Scan'.format(direction.capitalize(),signal)
 			image = self.signals[signal][direction]
 
-		if signal == 'Z':
-			image -= image[~np.isnan(image)].min() # shift Z so min value is zero
-
-		# Choose xy scale. Only nm for now.
-		extent = self.range.to('nanometer')
+		# Choose xy scale. 'nanometers' by default.
+		extent = self.range.to('nanometers')
 
 		# Choose third dimension scale
 		z_unit = ureg.parse_expression( zscale + str(image.units) ).units
 		image = image.to(z_unit)
 
 		if space == 'reciprocal':
-			image = np.fft.fft2(image.magnitude).real * image.units
+			image = np.fft.fftshift( np.fft.fft2(image.magnitude).real ) * (1 / image.units)
 			extent = 1 / extent
-			print(extent.units)
+	
 			plot_title += ' (FFT)'
 
 		# Create the figure
@@ -90,7 +93,8 @@ class Scan:
 
 		im_ax = ax.imshow(	image,
 							extent = [-extent[0].magnitude/2, extent[0].magnitude/2,
-									-extent[1].magnitude/2, extent[1].magnitude/2]) 
+									-extent[1].magnitude/2, extent[1].magnitude/2],
+							) 
 
 		ax.set_xlabel('x ({:~})'.format(extent.units))
 		ax.set_ylabel('y ({:~})'.format(extent.units))
@@ -98,8 +102,16 @@ class Scan:
 		# Color Bar
 		cbar = fig.colorbar(im_ax)
 		cbar.set_label('{} ({:~})'.format(signal,image.units))
+
 		ax.set_title(plot_title)
 		plt.show()
+
+	def get_FFT(self, signal='Z', direction='average'):
+		"""
+		Returns the Fourier transform of the raw data.
+		
+		"""
+		return np.abs( np.fft.fft2( self.signals[signal][direction].magnitude ) )
 
 
 class Spectrum:

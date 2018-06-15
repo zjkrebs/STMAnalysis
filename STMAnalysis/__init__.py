@@ -4,6 +4,7 @@ import nanonispy as nap # For uploading data from Nanonis Software
 
 import numpy as np 		# For manipulating data
 import matplotlib.pyplot as plt # For plotting data
+from matplotlib.colors import LogNorm
 
 # For easily converting units
 from pint import UnitRegistry
