@@ -1,4 +1,5 @@
 import numpy as np
+import STMAnalysis.Measurements as meas
 
 
 class PointBrowser(object):
@@ -35,6 +36,7 @@ class PointBrowser(object):
         if event.artist != line:
             return True
 
+        print(event.ind)
         N = len(event.ind)
         if not N:
             return True
@@ -42,6 +44,7 @@ class PointBrowser(object):
         # the click locations
         x = event.mouseevent.xdata
         y = event.mouseevent.ydata
+        print(x,y)
 
         distances = np.hypot(x - xs[event.ind], y - ys[event.ind])
         indmin = distances.argmin()
@@ -55,13 +58,12 @@ class PointBrowser(object):
             return
 
         dataind = self.lastind
+        print(dataind)
+        print(X[dataind])
 
         ax2.cla()
-        ax2.plot(X[dataind])
+        #ax2.plot(X[dataind])
 
-        ax2.text(0.05, 0.9, 'mu=%1.3f\nsigma=%1.3f' % (xs[dataind], ys[dataind]),
-                 transform=ax2.transAxes, va='top')
-        ax2.set_ylim(-0.5, 1.5)
         self.selected.set_visible(True)
         self.selected.set_data(xs[dataind], ys[dataind])
 
@@ -70,21 +72,42 @@ class PointBrowser(object):
 
 
 if __name__ == '__main__':
+    #import matplotlib as mpl 
     import matplotlib.pyplot as plt
-    # Fixing random state for reproducibility
-    np.random.seed(19680801)
 
-    X = np.random.rand(100, 200)
-    xs = np.mean(X, axis=1)
-    ys = np.std(X, axis=1)
+    # Example
+    #np.random.seed(19680801)
+    #X = np.random.rand(100, 200)
 
-    fig, (ax, ax2) = plt.subplots(2, 1)
+
+    # Choose .sxm file 
+    sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/test_files/4-20-18_BLG_on_HBN007.sxm"
+    # Extract the 2D scan data from the file 
+    scan = meas.Scan(sxmfile)
+    X = scan.signals['Z']['average']
+    specfile= "/Users/zkrebs/brarlab/STMAnalysis/test_files/Au11100034.dat"
+    dat = meas.Spectrum(specfile)
+
+    xs = np.array([500])
+    ys = np.array([500])
+    
+
+    fig, (ax, ax2) = plt.subplots(1, 2)
+    ax.imshow(X)
+
+   
     ax.set_title('Click on point to view spectrum')
-    line, = ax.plot(xs, ys, 'o', picker=5)  # 5 points tolerance
+    line, = ax.plot(xs, ys, 'o', picker=5) 
 
     browser = PointBrowser()
 
     fig.canvas.mpl_connect('pick_event', browser.onpick)
     fig.canvas.mpl_connect('key_press_event', browser.onpress)
 
+    
+
     plt.show()
+
+
+
+
