@@ -18,25 +18,25 @@ class PointBrowser(object):
         self.selected, = ax.plot([], [], 'o', ms=12, alpha=0.4,
                                  color='yellow', visible=False)
 
-    def onpress(self, event):
-        if self.lastind is None:
-            return
-        if event.key not in ('n', 'p'):
-            return
-        if event.key == 'n':
-            inc = 1
-        else:
-            inc = -1
-
-        self.lastind += inc
-        self.lastind = np.clip(self.lastind, 0, len(xs) - 1)
-        self.update()
+#    Key functionality - probably not needed 
+#    def onpress(self, event):
+#        if self.lastind is None:
+#            return
+#        if event.key not in ('n', 'p'):
+#            return
+#        if event.key == 'n':
+#            inc = 1
+#        else:
+#            inc = -1
+#
+#        self.lastind += inc
+#        self.lastind = np.clip(self.lastind, 0, len(xs) - 1)
+#        self.update()
 
     def onpick(self, event):
         if event.artist != line:
             return True
 
-        print(event.ind)
         N = len(event.ind)
         if not N:
             return True
@@ -64,11 +64,8 @@ class PointBrowser(object):
         ax2.cla()
         ax2.plot(spec.signals['Bias calc'],spec.signals['LI Demod 1 X']['forward'])
 
-        print("begin")
         currX = self.selected.get_xdata()
         currY = self.selected.get_ydata()
-        print(currX)
-        print(currY)
 
         currXY = list(zip(currX, currY))
         newXY = (xs[dataind], ys[dataind])
@@ -89,7 +86,7 @@ class PointBrowser(object):
 
         self.selected.set_data(updatedX, updatedY)
         self.selected.set_visible(True)
-        self.text.set_text('selected: %d' % dataind)
+ #       self.text.set_text('selected: %d' % dataind)
         fig.canvas.draw()
 
 
@@ -110,21 +107,14 @@ if __name__ == '__main__':
     # Choose .sxm file 
     sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/test_files/4-20-18_BLG_on_HBN007.sxm"
     os.chdir(os.path.dirname(sxmfile))
-    for file in glob.glob("*.dat"):
-        with open(file) as f:
-            for line in f: 
-                if "X (m)" in line:
-                    xcoord = line.split('\t')[1]
-                if "Y (m)" in line: 
-                    ycoord = line.split('\t')[1]
-        print(xcoord, ycoord)
+    for specfile in glob.glob("*.dat"):
+        spec = meas.Spectrum(specfile)
+        print(spec.coords) 
 
     # Extract the 2D scan data from the file 
     sxm = meas.Scan(sxmfile)
     #print(sxm.scan.header)
     X = sxm.signals['Z']['average']
-    specfile= "/Users/zkrebs/brarlab/STMAnalysis/test_files/Au11100034.dat"
-    spec = meas.Spectrum(specfile)
 
     xs = np.array([500, 600, 700])
     ys = np.array([500, 600, 700])
@@ -140,7 +130,7 @@ if __name__ == '__main__':
     browser = PointBrowser()
 
     fig.canvas.mpl_connect('pick_event', browser.onpick)
-    fig.canvas.mpl_connect('key_press_event', browser.onpress)
+    #fig.canvas.mpl_connect('key_press_event', browser.onpress)
 
     
     plt.show()

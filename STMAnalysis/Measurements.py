@@ -140,6 +140,7 @@ class Spectrum:
 		self.spec = nap.read.Spec(fname)
 		self.signals_temp = dict()
 		self.signals = self.spec.signals
+		self.coords = self.get_coords()
 
 		# Signal names are returned differently for spectrum
 		# 'Bias calc (V)' is special, it has no 'forward' and 'backward' data
@@ -202,6 +203,15 @@ class Spectrum:
 		ax.set_title(plot_title)
 
 		plt.show()
+
+	def get_coords(self):
+		f = open(self.fname)
+		for line in f: 
+			if "X (m)" in line:
+				xcoord = line.split('\t')[1]
+			if "Y (m)" in line: 
+				ycoord = line.split('\t')[1]
+		return (float(xcoord), float(ycoord))
 
 	def parse_signal_key(self, signal_key):
 		"""
