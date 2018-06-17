@@ -2,6 +2,7 @@ import numpy as np
 import STMAnalysis.Measurements as meas
 
 
+
 class PointBrowser(object):
     """
     Click on a point to select and highlight it -- the data that
@@ -14,7 +15,7 @@ class PointBrowser(object):
 
         self.text = ax.text(0.05, 0.95, 'selected: none',
                             transform=ax.transAxes, va='top')
-        self.selected, = ax.plot([xs[0]], [ys[0]], 'o', ms=12, alpha=0.4,
+        self.selected, = ax.plot([], [], 'o', ms=12, alpha=0.4,
                                  color='yellow', visible=False)
 
     def onpress(self, event):
@@ -32,7 +33,6 @@ class PointBrowser(object):
         self.update()
 
     def onpick(self, event):
-
         if event.artist != line:
             return True
 
@@ -44,7 +44,6 @@ class PointBrowser(object):
         # the click locations
         x = event.mouseevent.xdata
         y = event.mouseevent.ydata
-        print(x,y)
 
         distances = np.hypot(x - xs[event.ind], y - ys[event.ind])
         indmin = distances.argmin()
@@ -58,38 +57,77 @@ class PointBrowser(object):
             return
 
         dataind = self.lastind
-        print(dataind)
-        print(X[dataind])
+
+        #print(dataind)
+        #print(X[dataind])
 
         ax2.cla()
-        #ax2.plot(X[dataind])
+        ax2.plot(spec.signals['Bias calc'],spec.signals['LI Demod 1 X']['forward'])
 
+        print("begin")
+        currX = self.selected.get_xdata()
+        currY = self.selected.get_ydata()
+        print(currX)
+        print(currY)
+
+        currXY = list(zip(currX, currY))
+        newXY = (xs[dataind], ys[dataind])
+
+        if newXY in currXY:
+            currXY.remove(newXY)
+            if not currXY:
+                updatedX = []
+                updatedY = []
+            else:
+                updatedX = [list(t) for t in zip(*currXY)][0]
+                updatedY = [list(t) for t in zip(*currXY)][1]
+
+        else: 
+            updatedX = np.append(currX,newXY[0])
+            updatedY = np.append(currY,newXY[1])
+
+
+        self.selected.set_data(updatedX, updatedY)
         self.selected.set_visible(True)
-        self.selected.set_data(xs[dataind], ys[dataind])
-
         self.text.set_text('selected: %d' % dataind)
         fig.canvas.draw()
 
 
 if __name__ == '__main__':
-    #import matplotlib as mpl 
+    import matplotlib as mpl 
     import matplotlib.pyplot as plt
+    from tkinter import Tk
+    from tkinter.filedialog import askopenfilename
+    import glob, os 
+    
+    # Dialogue window to open desired .sxm file. For now will just feed in test file.
 
-    # Example
-    #np.random.seed(19680801)
-    #X = np.random.rand(100, 200)
-
+    #Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    #filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    #print(filename)
+    #print(os.path.dirname(filename))
 
     # Choose .sxm file 
     sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/test_files/4-20-18_BLG_on_HBN007.sxm"
-    # Extract the 2D scan data from the file 
-    scan = meas.Scan(sxmfile)
-    X = scan.signals['Z']['average']
-    specfile= "/Users/zkrebs/brarlab/STMAnalysis/test_files/Au11100034.dat"
-    dat = meas.Spectrum(specfile)
+    os.chdir(os.path.dirname(sxmfile))
+    for file in glob.glob("*.dat"):
+        with open(file) as f:
+            for line in f: 
+                if "X (m)" in line:
+                    xcoord = line.split('\t')[1]
+                if "Y (m)" in line: 
+                    ycoord = line.split('\t')[1]
+        print(xcoord, ycoord)
 
-    xs = np.array([500])
-    ys = np.array([500])
+    # Extract the 2D scan data from the file 
+    sxm = meas.Scan(sxmfile)
+    #print(sxm.scan.header)
+    X = sxm.signals['Z']['average']
+    specfile= "/Users/zkrebs/brarlab/STMAnalysis/test_files/Au11100034.dat"
+    spec = meas.Spectrum(specfile)
+
+    xs = np.array([500, 600, 700])
+    ys = np.array([500, 600, 700])
     
 
     fig, (ax, ax2) = plt.subplots(1, 2)
@@ -105,7 +143,6 @@ if __name__ == '__main__':
     fig.canvas.mpl_connect('key_press_event', browser.onpress)
 
     
-
     plt.show()
 
 
