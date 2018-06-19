@@ -3,6 +3,26 @@ import STMAnalysis.Measurements as meas
 
 
 
+
+class PointSpectrum(object):
+
+    def __init__(self, point, spectrum):
+        self.pos = point
+        self.spectrum = spectrum 
+        self.highlight, = ax.plot( [point[0]], [point[1]], marker='o', 
+                                ms=12, alpha=0.4, color='yellow', visible=False )
+        self.graph, = ax2.plot(spectrum.signals['Bias calc'], 
+                                spectrum.signals['LI Demod 1 X']['forward'], visible=False )
+
+    def show(self):
+        self.highlight.set_visible(True)
+        self.graph.set_visible(True)
+
+    def hide(self):
+        self.highlight.set_visible(False)
+        self.graph.set_visible(False)
+
+
 class PointBrowser(object):
     """
     Click on a point to select and highlight it -- the data that
@@ -10,28 +30,10 @@ class PointBrowser(object):
     and 'p' keys to browse through the next and previous points
     """
 
-    def __init__(self):
+    def __init__(self, data):
         self.lastind = 0
+        self.data = data
 
-        self.text = ax.text(0.05, 0.95, 'selected: none',
-                            transform=ax.transAxes, va='top')
-        self.selected, = ax.plot([], [], 'o', ms=12, alpha=0.4,
-                                 color='yellow', visible=False)
-
-#    Key functionality - probably not needed 
-#    def onpress(self, event):
-#        if self.lastind is None:
-#            return
-#        if event.key not in ('n', 'p'):
-#            return
-#        if event.key == 'n':
-#            inc = 1
-#        else:
-#            inc = -1
-#
-#        self.lastind += inc
-#        self.lastind = np.clip(self.lastind, 0, len(xs) - 1)
-#        self.update()
 
     def onpick(self, event):
         if event.artist != line:
@@ -41,7 +43,7 @@ class PointBrowser(object):
         if not N:
             return True
 
-        # the click locations
+        # the click location
         x = event.mouseevent.xdata
         y = event.mouseevent.ydata
 
@@ -58,37 +60,19 @@ class PointBrowser(object):
 
         dataind = self.lastind
 
-        #print(dataind)
-        #print(X[dataind])
+        if selectedPoint.highlight.get_visible():
+            selectedPoint.hide()
 
-        ax2.cla()
-        ax2.plot(spec.signals['Bias calc'],spec.signals['LI Demod 1 X']['forward'])
+        else:
+            selectedPoint.show()
 
-        currX = self.selected.get_xdata()
-        currY = self.selected.get_ydata()
-
-        currXY = list(zip(currX, currY))
-        newXY = (xs[dataind], ys[dataind])
-
-        if newXY in currXY:
-            currXY.remove(newXY)
-            if not currXY:
-                updatedX = []
-                updatedY = []
-            else:
-                updatedX = [list(t) for t in zip(*currXY)][0]
-                updatedY = [list(t) for t in zip(*currXY)][1]
-
-        else: 
-            updatedX = np.append(currX,newXY[0])
-            updatedY = np.append(currY,newXY[1])
-
-
-        self.selected.set_data(updatedX, updatedY)
-        self.selected.set_visible(True)
- #       self.text.set_text('selected: %d' % dataind)
+#       self.text.set_text('selected: %d' % dataind)
         fig.canvas.draw()
 
+def withinBox(point, center, width, height):
+    if ((center[0] - width) < point[0] < (center[0] + height)) and ((center[1] - height) < point[1] < (center[1] + height)):
+        return True 
+    return False  
 
 if __name__ == '__main__':
     import matplotlib as mpl 
@@ -100,37 +84,50 @@ if __name__ == '__main__':
     # Dialogue window to open desired .sxm file. For now will just feed in test file.
 
     #Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    #filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
-    #print(filename)
-    #print(os.path.dirname(filename))
+    #sxmfile = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    #print(sxmfile)
+    #print(os.path.dirname(sxmfile))
 
-    # Choose .sxm file 
-    sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/test_files/4-20-18_BLG_on_HBN007.sxm"
+    fig, (ax, ax2) = plt.subplots(1, 2)
+
+    masterlist = []
+    xs = np.array([])
+    ys = np.array([])
+
+
+    sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/testing/4-20-18_BLG_on_HBN004.sxm"
+    sxm = meas.Scan(sxmfile)
+    header = sxm.scan.header
+
+    center= np.array(header['scan_offset'])
+    extent = np.array(header['scan_range'])
+    pixelSize = np.array(header['scan_pixels'])
+
+    #print(center)
+    #print(extent)
+    #print(pixelSize)
+
     os.chdir(os.path.dirname(sxmfile))
     for specfile in glob.glob("*.dat"):
         spec = meas.Spectrum(specfile)
-        print(spec.coords) 
+        if withinBox(spec.coords, center, extent[0]/2.0, extent[1]/2.0):
+            location = pixelSize * ((spec.coords - center) / extent  + 0.5  )
+            xs = np.append(xs,int(location[0]))
+            ys = np.append(ys,int(location[1]))
+            datapoint = PointSpectrum(location, spec)
+            masterlist.append(datapoint)
 
-    # Extract the 2D scan data from the file 
-    sxm = meas.Scan(sxmfile)
-    #print(sxm.scan.header)
+
+    # Extract the 2D scan data from the file as background
     X = sxm.signals['Z']['average']
-
-    xs = np.array([500, 600, 700])
-    ys = np.array([500, 600, 700])
-    
-
-    fig, (ax, ax2) = plt.subplots(1, 2)
     ax.imshow(X)
 
-   
     ax.set_title('Click on point to view spectrum')
     line, = ax.plot(xs, ys, 'o', picker=5) 
 
-    browser = PointBrowser()
-
+    # Initialize interactive clicking
+    browser = PointBrowser(masterlist)
     fig.canvas.mpl_connect('pick_event', browser.onpick)
-    #fig.canvas.mpl_connect('key_press_event', browser.onpress)
 
     
     plt.show()

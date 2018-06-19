@@ -211,7 +211,7 @@ class Spectrum:
 				xcoord = line.split('\t')[1]
 			if "Y (m)" in line: 
 				ycoord = line.split('\t')[1]
-		return (float(xcoord), float(ycoord))
+		return np.array([float(xcoord), float(ycoord)])
 
 	def parse_signal_key(self, signal_key):
 		"""
