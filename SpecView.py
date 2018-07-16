@@ -1,39 +1,35 @@
+#// Author(s): Zach Krebs, Greg Holdman 
+#// E-mail: zkrebs@wisc.edu 
+
+
 import numpy as np
 import STMAnalysis.Measurements as meas
 
 
-
-
-class PointSpectrum(object):
+class PointSpectrum():
 
     def __init__(self, point, spectrum):
-        self.pos = point
+        self.location = point
         self.spectrum = spectrum 
-        self.highlight, = ax.plot( [point[0]], [point[1]], marker='o', 
+        self.highlight, = left_ax.plot( [self.location[0]], [self.location[1]], marker='o', 
                                 ms=12, alpha=0.4, color='yellow', visible=False )
-        self.graph, = ax2.plot(spectrum.signals['Bias calc'], 
+        self.dIdV, = right_ax.plot(spectrum.signals['Bias calc'], 
                                 spectrum.signals['LI Demod 1 X']['forward'], visible=False )
 
     def show(self):
         self.highlight.set_visible(True)
-        self.graph.set_visible(True)
+        self.dIdV.set_visible(True)
 
     def hide(self):
         self.highlight.set_visible(False)
-        self.graph.set_visible(False)
+        self.dIdV.set_visible(False)
 
 
-class PointBrowser(object):
-    """
-    Click on a point to select and highlight it -- the data that
-    generated the point will be shown in the lower axes.  Use the 'n'
-    and 'p' keys to browse through the next and previous points
-    """
+class PointBrowser():
 
-    def __init__(self, data):
+    def __init__(self, speclist):
         self.lastind = 0
-        self.data = data
-
+        self.data = speclist
 
     def onpick(self, event):
         if event.artist != line:
@@ -47,7 +43,7 @@ class PointBrowser(object):
         x = event.mouseevent.xdata
         y = event.mouseevent.ydata
 
-        distances = np.hypot(x - xs[event.ind], y - ys[event.ind])
+        distances = np.hypot(x - clickable_X[event.ind], y - clickable_Y[event.ind])
         indmin = distances.argmin()
         dataind = event.ind[indmin]
 
@@ -58,16 +54,28 @@ class PointBrowser(object):
         if self.lastind is None:
             return
 
+        legend_list = []
+        legend_labels = []
         dataind = self.lastind
+        selected_point = self.data[dataind]
 
-        if selectedPoint.highlight.get_visible():
-            selectedPoint.hide()
-
+        if selected_point.highlight.get_visible():
+            selected_point.hide()
         else:
-            selectedPoint.show()
+            selected_point.show()
 
-#       self.text.set_text('selected: %d' % dataind)
+        for i in range( len(self.data) ):
+            if self.data[i].highlight.get_visible():
+                legend_list.append(self.data[i].dIdV)
+                legend_labels.append(str(i+1))
+
+        if legend_list:
+            right_ax.legend(legend_list, legend_labels)
+        else:
+            right_ax.legend_.remove()
+
         fig.canvas.draw()
+
 
 def withinBox(point, center, width, height):
     if ((center[0] - width) < point[0] < (center[0] + height)) and ((center[1] - height) < point[1] < (center[1] + height)):
@@ -80,56 +88,50 @@ if __name__ == '__main__':
     from tkinter import Tk
     from tkinter.filedialog import askopenfilename
     import glob, os 
-    
-    # Dialogue window to open desired .sxm file. For now will just feed in test file.
 
-    #Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    #sxmfile = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    #Tk().withdraw()
+    #sxmfile = askopenfilename()
     #print(sxmfile)
     #print(os.path.dirname(sxmfile))
-
-    fig, (ax, ax2) = plt.subplots(1, 2)
-
-    masterlist = []
-    xs = np.array([])
-    ys = np.array([])
-
 
     sxmfile = "/Users/zkrebs/brarlab/STMAnalysis/testing/4-20-18_BLG_on_HBN004.sxm"
     sxm = meas.Scan(sxmfile)
     header = sxm.scan.header
 
-    center= np.array(header['scan_offset'])
+    fig, (left_ax, right_ax) = plt.subplots(1, 2)
+    right_ax.set_ylabel("dI/dV")
+
+    pointSpectrumList = []         # to be list of PointSpectrum objects 
+
+    # Gather dimensional parameters from the .sxm data
+    center = np.array(header['scan_offset'])
     extent = np.array(header['scan_range'])
-    pixelSize = np.array(header['scan_pixels'])
+    pixel_size = np.array(header['scan_pixels'])
 
-    #print(center)
-    #print(extent)
-    #print(pixelSize)
-
+    # Scrape all spectrum files in the same folder as the .sxm
     os.chdir(os.path.dirname(sxmfile))
     for specfile in glob.glob("*.dat"):
-        spec = meas.Spectrum(specfile)
-        if withinBox(spec.coords, center, extent[0]/2.0, extent[1]/2.0):
-            location = pixelSize * ((spec.coords - center) / extent  + 0.5  )
-            xs = np.append(xs,int(location[0]))
-            ys = np.append(ys,int(location[1]))
-            datapoint = PointSpectrum(location, spec)
-            masterlist.append(datapoint)
+        spectrum = meas.Spectrum(specfile)
+        # Check if spectrum location is within the scan region 
+        if withinBox(spectrum.coords, center, extent[0]/2.0, extent[1]/2.0):
+            # If so, initialize PointSpectrum object and add to master list 
+            pixel_location = pixel_size*((spectrum.coords-center)/extent + 0.5)
+            pointSpectrumList.append(PointSpectrum( pixel_location, spectrum))
+            left_ax.text(pixel_location[0], pixel_location[1], str(len(pointSpectrumList)))
 
+    # Pixel coordinates where there is a clickable object (e.g. PointSpectrum)
+    clickable_X = np.array([ s.location[0] for s in pointSpectrumList ])
+    clickable_Y = np.array([ s.location[1] for s in pointSpectrumList ])
 
-    # Extract the 2D scan data from the file as background
-    X = sxm.signals['Z']['average']
-    ax.imshow(X)
-
-    ax.set_title('Click on point to view spectrum')
-    line, = ax.plot(xs, ys, 'o', picker=5) 
+    # Plot the PointSpectrums on the scan image and index them 
+    left_ax.imshow(sxm.signals['Z']['average'], cmap='gray')
+    line, = left_ax.plot(clickable_X, clickable_Y, 'o', picker=5) 
 
     # Initialize interactive clicking
-    browser = PointBrowser(masterlist)
+    browser = PointBrowser(pointSpectrumList)
     fig.canvas.mpl_connect('pick_event', browser.onpick)
 
-    
+    plt.tight_layout()
     plt.show()
 
 
